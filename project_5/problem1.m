@@ -68,27 +68,27 @@ end
 X = sol';
 X_linear = sol_small';
 
-figure('Visible','off');
-% figure;
+% figure('Visible','off');
+figure;
 
 subplot(2,1,1)
 plot(t, X(1,:), 'r', t, x_nonlinear_dmd(1,:), 'b--');
 xlabel('Time (s)');
 ylabel('Theta (rad)');
-legend('Original Nonlinear Dynamics', 'DMD Linear Dynamics');
+legend('Original Nonlinear Dynamics', 'DMD Nonlinear Dynamics');
 title(['Angle Comparison (theta|_0 = ', num2str(theta0_full), ' rad, theta-dot|_0 = ', num2str(theta_dot0), ' rad/s)']);
 
 subplot(2,1,2)
 plot(t, X(2,:), 'r', t, x_nonlinear_dmd(2,:), 'b--');
 xlabel('Time (s)');
 ylabel('Angular Velocity (rad/s)');
-legend('Original Nonlinear Dynamics', 'DMD Linear Dynamics');
+legend('Original Nonlinear Dynamics', 'DMD Nonlinear Dynamics');
 title('Angular Velocity Comparison');
 sgtitle('Nonlinear Dynamics');
 
 % Plot comparison between original linear and DMD solution
-figure('Visible','off');
-% figure;
+% figure('Visible','off');
+figure;
 
 subplot(2,1,1)
 plot(t, X_linear(1,:), 'r', t, x_linear_dmd(1,:), 'b--');
@@ -109,6 +109,7 @@ sgtitle('Linear Dynamics - Small Angle Approximation');
 % A_DMD COMPARISON
 % Compare A_linear_DMD with A_true
 A_true = [0, 1; -g/L, 0];
+exp_Atrue_delt = exp(A_true * 0.2);
 error_norm_linear = norm(A_linear_DMD - exp(A_true * 0.2), 2);
 error_norm_nonlinear = norm(A_DMD - exp(A_true * 0.2), 2);
 

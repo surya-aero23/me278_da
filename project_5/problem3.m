@@ -1,5 +1,5 @@
-
-data = load('clustering_data.mat');
+% LOAD THE DATA
+data = load('Data/clustering_data.mat');
 data = data.data;
 
 % VISUALIZE THE DATA TO DETERMINE LINKAGE AND DISTANCE METRICS

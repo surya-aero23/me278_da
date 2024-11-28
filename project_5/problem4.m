@@ -1,89 +1,74 @@
-function Q4
-
 % Load UCI Wine Dataset
-data = readtable('wine/wine.data', 'FileType', 'text');
-features = data(:, 2:3); % Alcohol and Malic Acid
-labels = data.Var1; % Wine classes
-
-% Normalize features
-features = normalize(features);
-
+wineData = readtable('wine/wine.data', 'FileType', 'text');
+wineFeatures = wineData(:, 2:3);  
+wineLabels = wineData.Var1;  
+wineFeatures = normalize(wineFeatures);
 
 % Split the data (75% train, 25% test) ensuring class balance
-cv = cvpartition(labels, 'Holdout', 0.25);
-trainIdx = training(cv);
-testIdx = test(cv);
-
-X_train = features(trainIdx, :);
-y_train = labels(trainIdx);
-X_test = features(testIdx, :);
-y_test = labels(testIdx);
+dataSplit = cvpartition(wineLabels, 'Holdout', 0.25);  
+trainIndices = training(dataSplit);  
+testIndices = test(dataSplit);  
+trainFeatures = wineFeatures(trainIndices, :);  
+trainLabels = wineLabels(trainIndices);  
+testFeatures = wineFeatures(testIndices, :);  
+testLabels = wineLabels(testIndices);  
 
 % Pie charts for class distribution
 figure;
 subplot(1, 2, 1);
-pie(histcounts(categorical(y_train)));
+trainCategoricalData = categorical(trainLabels);  
+orderedTrainData = reordercats(trainCategoricalData, [1, 2, 3]);  
+piechart(orderedTrainData);
 title('Training Data Class Distribution');
 
 subplot(1, 2, 2);
-%disp(y_test)
-pie(histcounts(categorical(y_test)));
+testCategoricalData = categorical(testLabels);
+orderedTestData = reordercats(testCategoricalData, [1, 2, 3]);
+piechart(orderedTestData);
 title('Test Data Class Distribution');
 
 % Train classifiers
-% 1. Naive Bayes
-nbModel = fitcnb(X_train, y_train);
+naiveBayesClassifier = fitcnb(trainFeatures, trainLabels);
+ldaClassifier = fitcdiscr(trainFeatures, trainLabels);
+knnClassifier = fitcknn(trainFeatures, trainLabels, 'NumNeighbors', 5);
 
-% 2. Discriminant Analysis
-ldaModel = fitcdiscr(X_train, y_train);
-
-% 3. K-Nearest Neighbors (k=5)
-knnModel = fitcknn(X_train, y_train, 'NumNeighbors', 5);
-
-% Plot decision surfaces
-x1_range = linspace(min(features.Var2), max(features.Var2), 100);
-x2_range = linspace(min(features.Var3), max(features.Var3), 100);
-[X1, X2] = meshgrid(x1_range, x2_range);
-grid = [X1(:), X2(:)];
+% Decision surfaces
+N = 500;
+x1Range = linspace(min(wineFeatures.Var2), max(wineFeatures.Var2), N);  
+x2Range = linspace(min(wineFeatures.Var3), max(wineFeatures.Var3), N);  
+[X1, X2] = meshgrid(x1Range, x2Range);
+gridPoints = [X1(:), X2(:)];  
 
 figure;
-% Naive Bayes
 subplot(1, 3, 1);
-nbPred = predict(nbModel, grid);
-gscatter(X1(:), X2(:), nbPred);
+naiveBayesPrediction = predict(naiveBayesClassifier, gridPoints);
+gscatter(X1(:), X2(:), naiveBayesPrediction);
 title('Naive Bayes Decision Surface');
 
-% Discriminant Analysis
 subplot(1, 3, 2);
-ldaPred = predict(ldaModel, grid);
-gscatter(X1(:), X2(:), ldaPred);
+ldaPrediction = predict(ldaClassifier, gridPoints);
+gscatter(X1(:), X2(:), ldaPrediction);
 title('LDA Decision Surface');
 
-% KNN
 subplot(1, 3, 3);
-knnPred = predict(knnModel, grid);
-gscatter(X1(:), X2(:), knnPred);
+knnPrediction = predict(knnClassifier, gridPoints);
+gscatter(X1(:), X2(:), knnPrediction);
 title('KNN Decision Surface');
 
 % Confusion Matrices
 figure;
-% Naive Bayes
 subplot(1, 3, 1);
-nbTestPred = predict(nbModel, X_test);
-confusionchart(y_test, nbTestPred);
+naiveBayesTestPrediction = predict(naiveBayesClassifier, testFeatures);
+confusionchart(testLabels, naiveBayesTestPrediction);
 title('Naive Bayes Confusion Matrix');
 
-% Discriminant Analysis
 subplot(1, 3, 2);
-ldaTestPred = predict(ldaModel, X_test);
-confusionchart(y_test, ldaTestPred);
+ldaTestPrediction = predict(ldaClassifier, testFeatures);
+confusionchart(testLabels, ldaTestPrediction);
 title('LDA Confusion Matrix');
 
-% KNN
 subplot(1, 3, 3);
-knnTestPred = predict(knnModel, X_test);
-confusionchart(y_test, knnTestPred);
+knnTestPrediction = predict(knnClassifier, testFeatures);
+confusionchart(testLabels, knnTestPrediction);
 title('KNN Confusion Matrix');
 
-
-end

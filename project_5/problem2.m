@@ -1,274 +1,260 @@
-A = load('Data/regression1.mat');
-x1 = A.x1;
-x2 = A.x2;
-y = A.y;
+%% 2.1
+% Load the dataset
+dataStruct = load('Data/regression1.mat');  
+featureX1 = dataStruct.x1;  
+featureX2 = dataStruct.x2;  
+targetY = dataStruct.y;  
 
 % Ensure all variables are column vectors
-x1 = x1(:);  % Make sure x1 is a column vector
-x2 = x2(:);  % Make sure x2 is a column vector
-y = y(:);    % Make sure y is a column vector
+featureX1 = featureX1(:);  
+featureX2 = featureX2(:);  
+targetY = targetY(:);  
 
 % Number of data points
-n = length(y);
+numDataPoints = length(targetY);  
 
-% Set the random seed for reproducibility (optional)
-rng(42);
+% Set the random seed for reproducibility
+rng(43);  
 
-% Generate random indices for splitting
-indices = randperm(n);
+% Generate random indices for splitting data
+randomIndices = randperm(numDataPoints);  
 
-% Determine the split point
-train_size = floor(0.8 * n);  % 80% for training
-test_size = n - train_size;   % 20% for testing
+% Determine the split point for training and testing
+trainDataSize = floor(0.8 * numDataPoints);  % 80% for training
+testDataSize = numDataPoints - trainDataSize;   % 20% for testing
 
 % Split the data into training and testing sets
-train_indices = indices(1:train_size);
-test_indices = indices(train_size+1:end);
+trainIndices = randomIndices(1:trainDataSize);  
+testIndices = randomIndices(trainDataSize+1:end);  
 
 % Training data
-x1_train = x1(train_indices);
-x2_train = x2(train_indices);
-y_train = y(train_indices);
+trainX1 = featureX1(trainIndices);  
+trainX2 = featureX2(trainIndices);  
+trainTarget = targetY(trainIndices);  
 
 % Testing data
-x1_test = x1(test_indices);
-x2_test = x2(test_indices);
-y_test = y(test_indices);
+testX1 = featureX1(testIndices);  
+testX2 = featureX2(testIndices);  
+testTarget = targetY(testIndices);  
 
-% Create Polynomial Features for training data (degree 2)
-X_train = [ones(length(x1_train), 1), x1_train, x2_train, x1_train.^2, x2_train.^2, x1_train.*x2_train];
+% Create Polynomial Features (degree 2) for training data
+trainFeatures = [ones(length(trainX1), 1), trainX1, trainX2, trainX1.^2, trainX2.^2, trainX1.*trainX2];  
 
-% Fit Polynomial Regression Model using Least Squares on Training Data
-b = X_train \ y_train;
+% Fit Polynomial Regression Model using Least Squares
+coefficients = trainFeatures \ trainTarget;  
 
 % Make predictions on the testing data
-X_test = [ones(length(x1_test), 1), x1_test, x2_test, x1_test.^2, x2_test.^2, x1_test.*x2_test];
-y_pred = X_test * b;
+testFeatures = [ones(length(testX1), 1), testX1, testX2, testX1.^2, testX2.^2, testX1.*testX2];  
+predictedTargetTest = testFeatures * coefficients;  
 
 % Display the coefficients
-disp('Polynomial Regression Coefficients:');
-disp(b);
+disp('Polynomial Regression Coefficients:');  
+disp(coefficients);  
 
 % Calculate the Mean Squared Error (MSE) for the test data
-MSE_test = mean((y_pred - y_test).^2);
-disp('Mean Squared Error (MSE) on Test Data:');
-disp(MSE_test);
+MSE_test = mean((predictedTargetTest - testTarget).^2);  
+disp('Mean Squared Error (MSE) on Test Data:');  
+disp(MSE_test);  
 
 % Training Predictions
-X_train_full = [ones(length(x1_train), 1), x1_train, x2_train, x1_train.^2, x2_train.^2, x1_train.*x2_train];
-y_train_pred = X_train_full * b;
+trainPredictedTarget = trainFeatures * coefficients;  
 
 % Calculate the Mean Squared Error (MSE) for the training data
-MSE_train = mean((y_train_pred - y_train).^2);
-disp('Mean Squared Error (MSE) on Training Data:');
-disp(MSE_train);
+MSE_train = mean((trainPredictedTarget - trainTarget).^2);  
+disp('Mean Squared Error (MSE) on Training Data:');  
+disp(MSE_train);  
 
 % Judging Overfitting or Underfitting
-if MSE_train < MSE_test
-    disp('The model may be overfitting the data.');
-elseif MSE_train > MSE_test
-    disp('The model may be underfitting the data.');
-else
-    disp('The model is fitting the data well (no overfitting or underfitting detected).');
-end
+if MSE_train < MSE_test  
+    disp('The model may be overfitting the data.');  
+elseif MSE_train > MSE_test  
+    fprintf('The model may be underfitting the data.\n');  
+else  
+    fprintf('The model fits the data well (no overfitting or underfitting detected).\n');  
+end  
 
-% Visualization (Optional)
-% Plotting Actual vs Predicted values for test data
-figure;
-scatter3(x1_test, x2_test, y_test, 'filled');  % Actual data points (test)
-hold on;
-scatter3(x1_test, x2_test, y_pred, 'r');      % Predicted data points (test)
-title('Actual vs Predicted');
-xlabel('x1');
-ylabel('x2');
-zlabel('y');
-legend('Actual', 'Predicted');
+% Plotting Actual vs. Predicted values for test data
+figure;  
+scatter3(testX1, testX2, testTarget, 'filled');  % Actual test data points
+hold on;  
+scatter3(testX1, testX2, predictedTargetTest, 'r');  % Predicted test data points
+title('Actual vs. Predicted Data Points');  
+xlabel('Feature X1');  
+ylabel('Feature X2');  
+zlabel('Target Y');  
+legend('Actual', 'Predicted');  
 
-% Fitting Surface Visualization
-% Generate a grid for x1 and x2 for surface plotting
-[x1_grid, x2_grid] = meshgrid(linspace(min(x1), max(x1), 50), linspace(min(x2), max(x2), 50));
-X_grid = [ones(length(x1_grid(:)), 1), x1_grid(:), x2_grid(:), x1_grid(:).^2, x2_grid(:).^2, x1_grid(:).*x2_grid(:)];
-y_grid_pred = X_grid * b;  % Predicted values for the grid
+% Generate a grid for surface plotting
+[x1Grid, x2Grid] = meshgrid(linspace(min(featureX1), max(featureX1), 50), linspace(min(featureX2), max(featureX2), 50));  
+gridFeatures = [ones(length(x1Grid(:)), 1), x1Grid(:), x2Grid(:), x1Grid(:).^2, x2Grid(:).^2, x1Grid(:).*x2Grid(:)];  
+gridPredictions = gridFeatures * coefficients;  
 
-% Reshape the predicted values back into the grid shape
-y_grid_pred = reshape(y_grid_pred, size(x1_grid));
+% Reshape predictions back into grid shape for surface plotting
+gridPredictions = reshape(gridPredictions, size(x1Grid));  
 
-% Plot the surface
-figure;
-surf(x1_grid, x2_grid, y_grid_pred);
-hold on;
-scatter3(x1, x2, y, 'filled');  % Actual data points
-title('Polynomial Regression Surface Fit');
-xlabel('x1');
-ylabel('x2');
-zlabel('y');
-legend('Fitted Surface', 'Actual Data');
+% Plot the fitted surface
+figure;  
+surf(x1Grid, x2Grid, gridPredictions);  
+hold on;  
+scatter3(featureX1, featureX2, targetY, 'filled');  % Actual data points
+title('Polynomial Regression Surface Fit');  
+xlabel('Feature X1');  
+ylabel('Feature X2');  
+zlabel('Target Y');  
+legend('Fitted Surface', 'Actual Data');  
 
 
 %% 2.2
-A = load('Data/regression2.mat');
-x = A.x;
-y = A.y;
 
-x = x(:); 
-y = y(:);  
+% Load dataset
+regressionData = load('Data/regression2.mat');  
+inputFeature = regressionData.x;  
+targetOutput = regressionData.y;  
 
-n = length(y);
-rng(34);
-indices = randperm(n);
+% Ensure column vectors
+inputFeature = inputFeature(:);  
+targetOutput = targetOutput(:);  
 
-train_size = floor(0.8 * n);
-test_size = n - train_size;
-train_indices = indices(1:train_size);
-test_indices = indices(train_size+1:end);
+% Number of data points
+numDataPoints = length(targetOutput);  
 
-x_train = x(train_indices);
-y_train = y(train_indices);
-x_test = x(test_indices);
-y_test = y(test_indices);
+% Set random seed for reproducibility
+rng(43);  
+randomIndices = randperm(numDataPoints);  
 
-degree = 10;  % Degree of the polynomial
-X_train = ones(length(x_train), degree+1);  % Initialize X_train matrix
-for i = 1:degree
-    X_train(:,i+1) = x_train.^i;  % Create powers of x for each degree
-end
+% Determine training and testing split (80-20)
+trainDataSize = floor(0.8 * numDataPoints);  
+testDataSize = numDataPoints - trainDataSize;  
+trainIndices = randomIndices(1:trainDataSize);  
+testIndices = randomIndices(trainDataSize+1:end);  
 
-X_test = ones(length(x_test), degree+1);  % Initialize X_test matrix
-for i = 1:degree
-    X_test(:,i+1) = x_test.^i;  % Create powers of x for each degree
-end
+% Split data into training and testing sets
+trainInput = inputFeature(trainIndices);  
+trainTarget = targetOutput(trainIndices);  
+testInput = inputFeature(testIndices);  
+testTarget = targetOutput(testIndices);  
 
-b = X_train \ y_train;
+% Create polynomial features (degree 10) for training data
+polyDegree = 10;  
+trainFeatures = ones(length(trainInput), polyDegree + 1);  
+for i = 1:polyDegree  
+    trainFeatures(:, i + 1) = trainInput.^i;  
+end  
 
-disp('Polynomial Regression Coefficients (No Regularization):');
-disp(b);
+% Create polynomial features for testing data
+testFeatures = ones(length(testInput), polyDegree + 1);  
+for i = 1:polyDegree  
+    testFeatures(:, i + 1) = testInput.^i;  
+end  
 
-y_pred = X_test * b;
+% Fit polynomial regression model (unregularized)
+polyCoefficients = trainFeatures \ trainTarget;  
+disp('Polynomial Regression Coefficients (No Regularization):');  
+disp(polyCoefficients);  
 
-% Calculate the Mean Squared Error (MSE) for the test data
-MSE_test = mean((y_pred - y_test).^2);
-disp('Mean Squared Error (MSE) on Test Data (No Regularization):');
-disp(MSE_test);
+% Make predictions on test data
+predictedTestOutput = testFeatures * polyCoefficients;  
 
-% Calculate the MSE on the training data
-y_train_pred = X_train * b;  % Predictions on the training data
-MSE_train = mean((y_train_pred - y_train).^2);
-disp('Mean Squared Error (MSE) on Training Data (No Regularization):');
-disp(MSE_train);
+% Calculate Mean Squared Error (MSE) for the test data
+MSE_test = mean((predictedTestOutput - testTarget).^2);  
+disp('Mean Squared Error (MSE) on Test Data (No Regularization):');  
+disp(MSE_test);  
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculate MSE on the training data
+predictedTrainOutput = trainFeatures * polyCoefficients;  
+MSE_train = mean((predictedTrainOutput - trainTarget).^2);  
+disp('Mean Squared Error (MSE) on Training Data (No Regularization):');  
+disp(MSE_train);  
 
 % Regularization coefficient
-alpha = 0.1;
+ridgeAlpha = 0.1;  
 
-% Ridge Regression
-% Create the Ridge regression coefficient matrix
-I = eye(degree + 1);  % Identity matrix
-I(1, 1) = 0;  % Don't regularize the intercept term
+% Ridge Regression solution
+identityMatrix = eye(polyDegree + 1);  
+identityMatrix(1, 1) = 0;  % Exclude intercept from regularization
+ridgeCoefficients = (trainFeatures' * trainFeatures + ridgeAlpha * identityMatrix) \ (trainFeatures' * trainTarget);  
+disp('Ridge Regression Coefficients:');  
+disp(ridgeCoefficients);  
 
-% Compute the Ridge solution
-b_ridge = (X_train' * X_train + alpha * I) \ (X_train' * y_train);
-
-disp('Ridge Regression Coefficients:');
-disp(b_ridge);
-
-% Predictions on Test and Training Data
-y_train_pred_ridge = X_train * b_ridge;  % Training data predictions
-y_pred_ridge = X_test * b_ridge;  % Test data predictions
+% Ridge predictions on test and training data
+predictedTrainOutputRidge = trainFeatures * ridgeCoefficients;  
+predictedTestOutputRidge = testFeatures * ridgeCoefficients;  
 
 % Calculate MSE for Ridge Regression
-MSE_train_ridge = mean((y_train_pred_ridge - y_train).^2);
-MSE_test_ridge = mean((y_pred_ridge - y_test).^2);
-
-disp('Ridge Regression - Mean Squared Error (MSE) on Training Data:');
-disp(MSE_train_ridge);
-disp('Ridge Regression - Mean Squared Error (MSE) on Test Data:');
-disp(MSE_test_ridge);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+MSE_train_ridge = mean((predictedTrainOutputRidge - trainTarget).^2);  
+MSE_test_ridge = mean((predictedTestOutputRidge - testTarget).^2);  
+disp('Ridge Regression - Mean Squared Error (MSE) on Training Data:');  
+disp(MSE_train_ridge);  
+disp('Ridge Regression - Mean Squared Error (MSE) on Test Data:');  
+disp(MSE_test_ridge);  
 
 % Lasso Regression
-% Use lasso function to compute the Lasso coefficients
-[b_lasso, FitInfo] = lasso(X_train, y_train, 'Lambda', alpha);
+[lassoCoefficients, lassoInfo] = lasso(trainFeatures, trainTarget, 'Lambda', ridgeAlpha);  
+disp('Lasso Regression Coefficients:');  
+disp(lassoCoefficients);  
 
-disp('Lasso Regression Coefficients:');
-disp(b_lasso);
-
-% Predictions on Test and Training Data
-y_train_pred_lasso = X_train * b_lasso;  % Training data predictions
-y_pred_lasso = X_test * b_lasso;  % Test data predictions
+% Lasso predictions on test and training data
+predictedTrainOutputLasso = trainFeatures * lassoCoefficients;  
+predictedTestOutputLasso = testFeatures * lassoCoefficients;  
 
 % Calculate MSE for Lasso Regression
-MSE_train_lasso = mean((y_train_pred_lasso - y_train).^2);
-MSE_test_lasso = mean((y_pred_lasso - y_test).^2);
+MSE_train_lasso = mean((predictedTrainOutputLasso - trainTarget).^2);  
+MSE_test_lasso = mean((predictedTestOutputLasso - testTarget).^2);  
+disp('Lasso Regression - Mean Squared Error (MSE) on Training Data:');  
+disp(MSE_train_lasso);  
+disp('Lasso Regression - Mean Squared Error (MSE) on Test Data:');  
+disp(MSE_test_lasso);  
 
-disp('Lasso Regression - Mean Squared Error (MSE) on Training Data:');
-disp(MSE_train_lasso);
-disp('Lasso Regression - Mean Squared Error (MSE) on Test Data:');
-disp(MSE_test_lasso);
+% Plot true vs. predicted values for polynomial regression (no regularization)
+figure;  
+scatter(inputFeature, targetOutput, 50, 'k', 'filled', 'DisplayName', 'True Data');  
+hold on;  
+% Polynomial fit for the entire dataset
+fullFeatureSet = ones(length(inputFeature), polyDegree + 1);  
+for i = 1:polyDegree  
+    fullFeatureSet(:, i + 1) = inputFeature.^i;  
+end  
+fullPredictionPoly = fullFeatureSet * polyCoefficients;  
+scatter(inputFeature, fullPredictionPoly, 30, 'b', 'filled', 'DisplayName', 'Polynomial Fit');  
+title('Polynomial Regression - All Data');  
+xlabel('Input Feature');  
+ylabel('Target Output');  
+legend;  
+hold off;  
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Create a figure for the plots
-figure;
+% Plot Ridge regression fit
+figure;  
+scatter(inputFeature, targetOutput, 50, 'k', 'filled', 'DisplayName', 'True Data');  
+hold on;  
+fullPredictionRidge = fullFeatureSet * ridgeCoefficients;  
+scatter(inputFeature, fullPredictionRidge, 30, 'r', 'filled', 'DisplayName', 'Ridge Fit');  
+title('Ridge Regression - All Data');  
+xlabel('Input Feature');  
+ylabel('Target Output');  
+legend;  
+hold off;  
 
-% Plot the true data for the entire dataset
-scatter(x, y, 50, 'k', 'filled', 'DisplayName', 'True Data');  % '50' for marker size, 'k' for black
-hold on;
+% Plot Lasso regression fit
+figure;  
+scatter(inputFeature, targetOutput, 50, 'k', 'filled', 'DisplayName', 'True Data');  
+hold on;  
+fullPredictionLasso = fullFeatureSet * lassoCoefficients;  
+scatter(inputFeature, fullPredictionLasso, 30, 'g', 'filled', 'DisplayName', 'Lasso Fit');  
+title('Lasso Regression - All Data');  
+xlabel('Input Feature');  
+ylabel('Target Output');  
+legend;  
+hold off;  
 
-% Scatter plot for the unregularized (Polynomial) fit on the entire dataset
-X_all = ones(length(x), degree + 1);  % Include all data points (train + test)
-for i = 1:degree
-    X_all(:, i + 1) = x.^i;  % Create powers of x for each degree
-end
-y_pred_poly_all = X_all * b;  % Polynomial predictions for all data points
-scatter(x, y_pred_poly_all, 30, 'b', 'filled', 'DisplayName', 'Polynomial Fit (No Regularization)');
-
-title('Polynomial Regression (No Regularization) - All Data');
-xlabel('x');
-ylabel('y');
-legend;
-hold off;
-
-% Plot the Ridge regularized fit for the entire dataset
-figure;
-scatter(x, y, 50, 'k', 'filled', 'DisplayName', 'True Data');
-hold on;
-
-y_pred_ridge_all = X_all * b_ridge;  % Ridge predictions for all data points
-scatter(x, y_pred_ridge_all, 30, 'r', 'filled', 'DisplayName', 'Ridge Fit');
-
-title('Ridge Regression - All Data');
-xlabel('x');
-ylabel('y');
-legend;
-hold off;
-
-% Plot the Lasso regularized fit for the entire dataset
-figure;
-scatter(x, y, 50, 'k', 'filled', 'DisplayName', 'True Data');
-hold on;
-
-y_pred_lasso_all = X_all * b_lasso;  % Lasso predictions for all data points
-scatter(x, y_pred_lasso_all, 30, 'g', 'filled', 'DisplayName', 'Lasso Fit');
-
-title('Lasso Regression - All Data');
-xlabel('x');
-ylabel('y');
-legend;
-hold off;
-
-% Comparison of all models' predictions on the entire dataset
-figure;
-scatter(x, y, 50, 'k', 'filled', 'DisplayName', 'True Data');
-hold on;
-
-% Scatter for all fits with different colors and markers
-scatter(x, y_pred_poly_all, 30, 'b', 'filled', 'DisplayName', 'Polynomial (No Regularization)');
-scatter(x, y_pred_ridge_all, 30, 'r', 'filled', 'DisplayName', 'Ridge');
-scatter(x, y_pred_lasso_all, 30, 'g', 'filled', 'DisplayName', 'Lasso');
-
-title('Comparison of All Models on All Data');
-xlabel('x');
-ylabel('y');
-legend;
-hold off;
+% Compare all models' predictions on the entire dataset
+figure;  
+scatter(inputFeature, targetOutput, 50, 'k', 'filled', 'DisplayName', 'True Data');  
+hold on;  
+scatter(inputFeature, fullPredictionPoly, 30, 'b', 'filled', 'DisplayName', 'Polynomial');  
+scatter(inputFeature, fullPredictionRidge, 30, 'r', 'filled', 'DisplayName', 'Ridge');  
+scatter(inputFeature, fullPredictionLasso, 30, 'g', 'filled', 'DisplayName', 'Lasso');  
+title('Comparison of All Models');  
+xlabel('Input Feature');  
+ylabel('Target Output');  
+legend;  
+hold off;  
